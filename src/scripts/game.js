@@ -1,23 +1,578 @@
-const KEY='halloumi-empire-v0-save-1';
-const keys=['farm','dairy','grill'];
-const costs={farm:12,dairy:18,grill:24};
-const autoCosts={farm:40,dairy:80,grill:120};
-const cycles={farm:2.5,dairy:3,grill:3.5};
-const empty=()=>({coins:0,milk:0,halloumi:0,levels:{farm:1,dairy:1,grill:1},auto:{farm:false,dairy:false,grill:false},progress:{farm:0,dairy:0,grill:0},sold:0,taps:0,firstSale:false,lastUpdatedAt:Date.now()});
-const $=id=>document.getElementById(id);
-const fmt=n=>Math.floor(n).toLocaleString('fr-FR');
-const cost=k=>Math.ceil(costs[k]*1.38**(s.levels[k]-1));
-const price=()=>8+(s.levels.grill-1)*3;
-function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'null');if(!saved?.levels||!saved?.auto)return empty();const clean=empty();for(const k of ['coins','milk','halloumi','sold','taps','lastUpdatedAt'])if(Number.isFinite(saved[k])&&saved[k]>=0)clean[k]=saved[k];clean.firstSale=saved.firstSale===true||clean.sold>0;for(const k of keys){if(Number.isInteger(saved.levels[k])&&saved.levels[k]>=1&&saved.levels[k]<=1000)clean.levels[k]=saved.levels[k];clean.auto[k]=saved.auto[k]===true;if(Number.isFinite(saved.progress?.[k])&&saved.progress[k]>=0&&saved.progress[k]<cycles[k])clean.progress[k]=saved.progress[k]}return clean}catch{return empty()}}
-let s=load(),lastTick=Date.now(),savedAt=lastTick,noticeTimer;
-function save(t=Date.now()){s.lastUpdatedAt=t;try{localStorage.setItem(KEY,JSON.stringify(s))}catch{}savedAt=t}
-function sell(n){s.halloumi-=n;s.coins+=n*price();s.sold+=n;s.firstSale=true}
-function advance(dt){if(s.auto.farm){s.progress.farm+=dt;const batches=Math.floor(s.progress.farm/cycles.farm);if(batches){s.milk+=batches*s.levels.farm;s.progress.farm-=batches*cycles.farm}}if(s.auto.dairy){s.progress.dairy=Math.min(cycles.dairy,s.progress.dairy+dt);if(s.milk>=1&&s.progress.dairy>=cycles.dairy){const n=Math.min(s.milk,s.levels.dairy);s.milk-=n;s.halloumi+=n;s.progress.dairy=0}}if(s.auto.grill){s.progress.grill=Math.min(cycles.grill,s.progress.grill+dt);if(s.halloumi>=1&&s.progress.grill>=cycles.grill){sell(Math.min(s.halloumi,s.levels.grill));s.progress.grill=0}}}
-function catchUp(now){const seconds=Math.min(14400,Math.max(0,(now-s.lastUpdatedAt)/1000)),before=s.coins;const full=Math.floor(seconds);for(let i=0;i<full;i++)advance(1);if(seconds-full)advance(seconds-full);lastTick=now;save(now);if(seconds>=10&&s.coins>before)notify(`Pendant ton absence : +${fmt(s.coins-before)} pièces !`)}
-function notify(msg){const box=$('notice');box.textContent=msg;box.hidden=false;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>box.hidden=true,4000)}
-function sparkle(k,text){const b=$('scene-'+k),f=$('float');b.classList.remove('active','pop');f.classList.remove('fly');void b.offsetWidth;b.classList.add('active','pop');f.textContent=text;f.classList.add('fly');setTimeout(()=>{b.classList.remove('active','pop');f.classList.remove('fly')},1100)}
-function objective(){if(!s.firstSale)return'Trais une chèvre, fabrique un bloc et vends-le !';if(!s.auto.farm)return'Automatise la ferme : elle produira du lait toute seule.';if(!s.auto.dairy)return'Automatise la fromagerie.';if(!s.auto.grill)return'Automatise le grill et laisse tourner ton île.';if(s.sold<100)return`Vends 100 halloumis : encore ${fmt(100-s.sold)} !`;return'Bravo ! Améliore tes bâtiments pour agrandir ton empire.'}
-function render(){ $('coins').textContent=fmt(s.coins);$('milk').textContent=fmt(s.milk);$('halloumi').textContent=fmt(s.halloumi);$('price').textContent=fmt(price());$('objective').textContent=objective();$('income').textContent=s.auto.grill?`Jusqu’à ${fmt(60/cycles.grill*s.levels.grill*price())} 🪙/min`:'Vente manuelle';$('stage').textContent=s.auto.grill?'Empire en marche':s.auto.farm?'Une ferme qui grandit':'Les débuts';for(const k of keys){$('scene-'+k).classList.toggle('automated',s.auto[k]);$(k+'-level').textContent=`NV. ${s.levels[k]}`;const up=document.querySelector(`[data-upgrade="${k}"]`);up.textContent=`Améliorer · ${fmt(cost(k))} 🪙`;up.disabled=s.coins<cost(k);const auto=document.querySelector(`[data-auto="${k}"]`);auto.textContent=s.auto[k]?'✓ Automatique':`⚙️ Automatiser · ${fmt(autoCosts[k])} 🪙`;auto.disabled=s.auto[k]||s.coins<autoCosts[k];auto.classList.toggle('done',s.auto[k]);const manual=document.querySelector(`[data-manual="${k}"]`),n=k==='farm'?s.levels.farm:Math.min(s[k==='dairy'?'milk':'halloumi'],s.levels[k]);manual.disabled=k!=='farm'&&n<1;manual.textContent=k==='farm'?`Traire +${n} 🥛`:k==='dairy'?`Fabriquer · ${n} 🥛`:`Vendre · +${n*price()} 🪙`}
-const ms=[[s.firstSale,'Premier halloumi vendu'],[s.auto.farm,'Ferme automatisée'],[s.auto.dairy,'Fromagerie automatisée'],[s.auto.grill,'Grill automatisé'],[s.sold>=100,'100 halloumis vendus']];$('milestones').replaceChildren(...ms.map(([done,name])=>{const d=document.createElement('div');d.className='milestone'+(done?' complete':'');d.textContent=(done?'✓ ':'○ ')+name;return d}));$('stats').textContent=`${fmt(s.sold)} blocs vendus · ${fmt(s.taps)} actions manuelles`}
-document.addEventListener('click',e=>{const btn=e.target.closest('button');if(!btn||btn.disabled)return;let fx=null;const k=btn.dataset.manual;if(k){if(k==='farm'){s.milk+=s.levels.farm;fx=['farm',`+${s.levels.farm} 🥛`]}else if(k==='dairy'&&s.milk>=1){const n=Math.min(s.milk,s.levels.dairy);s.milk-=n;s.halloumi+=n;fx=['dairy',`+${n} 🧀`]}else if(k==='grill'&&s.halloumi>=1){const n=Math.min(s.halloumi,s.levels.grill);sell(n);fx=['grill',`+${n*price()} 🪙`]}s.taps++}const up=btn.dataset.upgrade;if(up&&s.coins>=cost(up)){s.coins-=cost(up);s.levels[up]++;fx=[up,'NIVEAU +1 !'];notify('Bâtiment amélioré !')}const auto=btn.dataset.auto;if(auto&&!s.auto[auto]&&s.coins>=autoCosts[auto]){s.coins-=autoCosts[auto];s.auto[auto]=true;fx=[auto,'AUTO !'];notify('Automatisation débloquée !')}if(btn.id==='reset'&&window.confirm('Effacer ta partie et recommencer ?')){s=empty();notify('Nouvelle partie commencée !')}if(fx)sparkle(...fx);save();render()});
-catchUp(Date.now());render();setInterval(()=>{if(document.hidden)return;const now=Date.now(),dt=Math.max(0,Math.min(14400,(now-lastTick)/1000));lastTick=now;if(dt>3)catchUp(now);else{advance(dt);if(now-savedAt>=3000)save(now)}render()},250);document.addEventListener('visibilitychange',()=>{if(document.hidden)save();else{catchUp(Date.now());render()}});window.addEventListener('pagehide',()=>save());
+const KEY = 'halloumi-empire-v0-save-1';
+
+const stations = ['farm', 'dairy', 'grill'];
+
+const baseCost = {
+  farm: 12,
+  dairy: 18,
+  grill: 24,
+};
+
+const autoCost = {
+  farm: 40,
+  dairy: 80,
+  grill: 120,
+};
+
+const cycle = {
+  farm: 2.5,
+  dairy: 3,
+  grill: 3.5,
+};
+
+const blank = () => ({
+  coins: 0,
+  milk: 0,
+  halloumi: 0,
+  levels: {
+    farm: 1,
+    dairy: 1,
+    grill: 1,
+  },
+  auto: {
+    farm: false,
+    dairy: false,
+    grill: false,
+  },
+  progress: {
+    farm: 0,
+    dairy: 0,
+    grill: 0,
+  },
+  sold: 0,
+  taps: 0,
+  firstSale: false,
+  lastUpdatedAt: Date.now(),
+});
+
+const el = (id) => document.getElementById(id);
+
+const fmt = (number) =>
+  Math.floor(number).toLocaleString('fr-FR');
+
+function load() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+
+    if (!saved?.levels || !saved?.auto) {
+      return blank();
+    }
+
+    const clean = blank();
+
+    for (const key of [
+      'coins',
+      'milk',
+      'halloumi',
+      'sold',
+      'taps',
+      'lastUpdatedAt',
+    ]) {
+      if (Number.isFinite(saved[key]) && saved[key] >= 0) {
+        clean[key] = saved[key];
+      }
+    }
+
+    clean.firstSale =
+      saved.firstSale === true || clean.sold > 0;
+
+    for (const key of stations) {
+      if (
+        Number.isInteger(saved.levels[key]) &&
+        saved.levels[key] > 0 &&
+        saved.levels[key] <= 1000
+      ) {
+        clean.levels[key] = saved.levels[key];
+      }
+
+      clean.auto[key] = saved.auto[key] === true;
+
+      if (
+        Number.isFinite(saved.progress?.[key]) &&
+        saved.progress[key] >= 0 &&
+        saved.progress[key] < cycle[key]
+      ) {
+        clean.progress[key] = saved.progress[key];
+      }
+    }
+
+    return clean;
+  } catch {
+    return blank();
+  }
+}
+
+let state = load();
+let lastTick = Date.now();
+let lastSave = lastTick;
+let toastTimer;
+let activeTab = 'island';
+
+const price = () => 8 + (state.levels.grill - 1) * 3;
+
+const upgradeCost = (key) =>
+  Math.ceil(
+    baseCost[key] * Math.pow(1.38, state.levels[key] - 1)
+  );
+
+function save(now = Date.now()) {
+  state.lastUpdatedAt = now;
+
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  } catch {
+    // Le stockage peut être désactivé dans certains navigateurs.
+  }
+
+  lastSave = now;
+}
+
+function sell(quantity) {
+  state.halloumi -= quantity;
+  state.coins += quantity * price();
+  state.sold += quantity;
+  state.firstSale = true;
+}
+
+function advance(seconds) {
+  if (state.auto.farm) {
+    state.progress.farm += seconds;
+
+    const batches = Math.floor(
+      state.progress.farm / cycle.farm
+    );
+
+    if (batches) {
+      state.milk += batches * state.levels.farm;
+      state.progress.farm -= batches * cycle.farm;
+    }
+  }
+
+  if (state.auto.dairy) {
+    state.progress.dairy = Math.min(
+      cycle.dairy,
+      state.progress.dairy + seconds
+    );
+
+    if (
+      state.milk >= 1 &&
+      state.progress.dairy >= cycle.dairy
+    ) {
+      const quantity = Math.min(
+        state.milk,
+        state.levels.dairy
+      );
+
+      state.milk -= quantity;
+      state.halloumi += quantity;
+      state.progress.dairy = 0;
+    }
+  }
+
+  if (state.auto.grill) {
+    state.progress.grill = Math.min(
+      cycle.grill,
+      state.progress.grill + seconds
+    );
+
+    if (
+      state.halloumi >= 1 &&
+      state.progress.grill >= cycle.grill
+    ) {
+      sell(
+        Math.min(state.halloumi, state.levels.grill)
+      );
+
+      state.progress.grill = 0;
+    }
+  }
+}
+
+function toast(message) {
+  const notice = el('notice');
+
+  notice.textContent = message;
+  notice.hidden = false;
+
+  clearTimeout(toastTimer);
+
+  toastTimer = setTimeout(() => {
+    notice.hidden = true;
+  }, 3500);
+}
+
+function catchUp(now) {
+  const seconds = Math.min(
+    14400,
+    Math.max(0, (now - state.lastUpdatedAt) / 1000)
+  );
+
+  const coinsBefore = state.coins;
+  const fullSeconds = Math.floor(seconds);
+
+  for (let i = 0; i < fullSeconds; i++) {
+    advance(1);
+  }
+
+  if (seconds - fullSeconds) {
+    advance(seconds - fullSeconds);
+  }
+
+  lastTick = now;
+  save(now);
+
+  if (seconds >= 10 && state.coins > coinsBefore) {
+    toast(
+      `Pendant ton absence : +${fmt(
+        state.coins - coinsBefore
+      )} pièces !`
+    );
+  }
+}
+
+function mission() {
+  if (!state.firstSale) {
+    return 'Trais, fabrique puis vends ton premier halloumi !';
+  }
+
+  if (!state.auto.farm) {
+    return 'Automatise la ferme dans Améliorations.';
+  }
+
+  if (!state.auto.dairy) {
+    return 'Automatise l’atelier dans Améliorations.';
+  }
+
+  if (!state.auto.grill) {
+    return 'Automatise le grill dans Améliorations.';
+  }
+
+  if (state.sold < 100) {
+    return `Vends 100 blocs : encore ${fmt(
+      100 - state.sold
+    )} !`;
+  }
+
+  return 'Ton empire démarre ! Continue les améliorations.';
+}
+
+function effect(station, text) {
+  const card = el(`place-${station}`);
+  const animation = el('fx');
+
+  card.classList.remove('pulse');
+  animation.classList.remove('fly');
+
+  // Relance l'animation si le joueur tape plusieurs fois.
+  void card.offsetWidth;
+
+  card.classList.add('pulse');
+  animation.textContent = text;
+  animation.classList.add('fly');
+
+  setTimeout(() => {
+    card.classList.remove('pulse');
+    animation.classList.remove('fly');
+  }, 950);
+}
+
+function render() {
+  el('coins').textContent = fmt(state.coins);
+  el('milk').textContent = fmt(state.milk);
+  el('halloumi').textContent = fmt(state.halloumi);
+  el('price').textContent = fmt(price());
+  el('objective').textContent = mission();
+
+  el('island-status').textContent = state.auto.grill
+    ? 'Ton île tourne toute seule !'
+    : state.auto.farm
+      ? 'Ton empire prend vie…'
+      : 'Une petite aventure commence…';
+
+  for (const key of stations) {
+    el(`${key}-level`).textContent =
+      `Nv. ${state.levels[key]}`;
+
+    el(`${key}-indicator`).hidden =
+      !state.auto[key];
+
+    el(`${key}-upgrade-info`).textContent =
+      key === 'grill'
+        ? `Nv. ${state.levels[key]} · ${price()} pièces par bloc`
+        : `Nv. ${state.levels[key]} · ${state.levels[key]} ${
+            key === 'farm' ? 'lait' : 'bloc(s)'
+          } par cycle`;
+
+    const upgrade = document.querySelector(
+      `[data-upgrade="${key}"]`
+    );
+
+    const automation = document.querySelector(
+      `[data-auto="${key}"]`
+    );
+
+    const manual = document.querySelector(
+      `[data-manual="${key}"]`
+    );
+
+    upgrade.textContent =
+      `Améliorer · ${fmt(upgradeCost(key))} pièces`;
+
+    upgrade.disabled =
+      state.coins < upgradeCost(key);
+
+    automation.textContent = state.auto[key]
+      ? '✓ Automatique'
+      : `Automatiser · ${fmt(autoCost[key])} pièces`;
+
+    automation.disabled =
+      state.auto[key] || state.coins < autoCost[key];
+
+    automation.classList.toggle(
+      'done',
+      state.auto[key]
+    );
+
+    const quantity =
+      key === 'farm'
+        ? state.levels.farm
+        : Math.min(
+            state[key === 'dairy' ? 'milk' : 'halloumi'],
+            state.levels[key]
+          );
+
+    manual.disabled =
+      key !== 'farm' && quantity < 1;
+
+    manual.innerHTML =
+      key === 'farm'
+        ? `Traire <b>+${quantity} lait</b>`
+        : key === 'dairy'
+          ? `Fabriquer <b>${quantity} bloc${
+              quantity > 1 ? 's' : ''
+            }</b>`
+          : `Vendre <b>+${
+              quantity * price()
+            } pièces</b>`;
+  }
+
+  const steps = [
+    [state.firstSale, 'Premier halloumi vendu'],
+    [state.auto.farm, 'Ferme automatisée'],
+    [state.auto.dairy, 'Atelier automatisé'],
+    [state.auto.grill, 'Grill automatisé'],
+    [state.sold >= 100, '100 blocs vendus'],
+  ];
+
+  el('milestones').replaceChildren(
+    ...steps.map(([done, label]) => {
+      const item = document.createElement('div');
+      const icon = document.createElement('span');
+      const name = document.createElement('span');
+
+      item.className =
+        'achievement' + (done ? ' complete' : '');
+
+      icon.className = 'seal';
+      icon.textContent = done ? '✦' : '○';
+      name.textContent = label;
+
+      item.append(icon, name);
+
+      return item;
+    })
+  );
+
+  el('stats').textContent =
+    `${fmt(state.sold)} blocs vendus · ` +
+    `${fmt(state.taps)} actions manuelles`;
+}
+
+function tab(name) {
+  activeTab = name;
+
+  for (const key of [
+    'island',
+    'achievements',
+    'upgrades',
+  ]) {
+    el(`screen-${key}`).hidden = key !== name;
+  }
+
+  for (const button of document.querySelectorAll(
+    '[data-tab]'
+  )) {
+    const selected = button.dataset.tab === name;
+
+    button.classList.toggle('selected', selected);
+
+    if (selected) {
+      button.setAttribute('aria-current', 'page');
+    } else {
+      button.removeAttribute('aria-current');
+    }
+  }
+
+  el('view-title').textContent = {
+    island: 'Mon île',
+    achievements: 'Exploits',
+    upgrades: 'Améliorations',
+  }[name];
+
+  el('mission').hidden = name !== 'island';
+}
+
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('button');
+
+  if (!button || button.disabled) {
+    return;
+  }
+
+  if (button.dataset.tab) {
+    tab(button.dataset.tab);
+    return;
+  }
+
+  let animation = null;
+  const station = button.dataset.manual;
+
+  if (station) {
+    if (station === 'farm') {
+      state.milk += state.levels.farm;
+
+      animation = [
+        station,
+        `+${state.levels.farm} lait`,
+      ];
+    } else if (
+      station === 'dairy' &&
+      state.milk > 0
+    ) {
+      const quantity = Math.min(
+        state.milk,
+        state.levels.dairy
+      );
+
+      state.milk -= quantity;
+      state.halloumi += quantity;
+
+      animation = [
+        station,
+        `+${quantity} halloumi`,
+      ];
+    } else if (
+      station === 'grill' &&
+      state.halloumi > 0
+    ) {
+      const quantity = Math.min(
+        state.halloumi,
+        state.levels.grill
+      );
+
+      sell(quantity);
+
+      animation = [
+        station,
+        `+${quantity * price()} pièces`,
+      ];
+    }
+
+    state.taps++;
+  }
+
+  const upgrade = button.dataset.upgrade;
+
+  if (
+    upgrade &&
+    state.coins >= upgradeCost(upgrade)
+  ) {
+    state.coins -= upgradeCost(upgrade);
+    state.levels[upgrade]++;
+
+    toast('Bâtiment amélioré !');
+  }
+
+  const automation = button.dataset.auto;
+
+  if (
+    automation &&
+    !state.auto[automation] &&
+    state.coins >= autoCost[automation]
+  ) {
+    state.coins -= autoCost[automation];
+    state.auto[automation] = true;
+
+    toast('Automatisation débloquée !');
+  }
+
+  if (
+    button.id === 'reset' &&
+    window.confirm(
+      'Effacer ta partie et recommencer ?'
+    )
+  ) {
+    state = blank();
+
+    toast('Nouvelle partie commencée !');
+    tab('island');
+  }
+
+  if (animation) {
+    effect(...animation);
+  }
+
+  save();
+  render();
+});
+
+catchUp(Date.now());
+render();
+tab('island');
+
+setInterval(() => {
+  if (document.hidden) {
+    return;
+  }
+
+  const now = Date.now();
+
+  const elapsed = Math.max(
+    0,
+    Math.min(
+      14400,
+      (now - lastTick) / 1000
+    )
+  );
+
+  lastTick = now;
+
+  if (elapsed > 3) {
+    catchUp(now);
+  } else {
+    advance(elapsed);
+
+    if (now - lastSave >= 3000) {
+      save(now);
+    }
+  }
+
+  render();
+}, 250);
+
+document.addEventListener(
+  'visibilitychange',
+  () => {
+    if (document.hidden) {
+      save();
+    } else {
+      catchUp(Date.now());
+      render();
+    }
+  }
+);
+
+window.addEventListener(
+  'pagehide',
+  () => save()
+);
