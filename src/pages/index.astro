@@ -1,0 +1,38 @@
+---
+const title = 'Halloumi Empire — V0';
+---
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f4e9ce" />
+  <meta name="description" content="Transforme du lait en halloumi et bâtis ta petite fromagerie." />
+  <title>{title}</title>
+</head>
+<body>
+<main class="app">
+  <header class="hero">
+    <div class="brand"><span class="logo" aria-hidden="true">🧀</span><div><span class="eyebrow">La petite fromagerie</span><h1>Halloumi Empire</h1></div></div>
+    <p>Du premier bloc à la fromagerie automatique.</p>
+  </header>
+  <section class="wallet" aria-label="Trésorerie"><div><small>Trésorerie</small><strong id="coins">0</strong><span> pièces</span></div><span id="income" class="rate">0 / min</span></section>
+  <section class="objective"><span class="tag">PROCHAIN CAP</span><p id="objective">Produis ton premier bloc de halloumi.</p></section>
+  <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+  <section class="pipeline" aria-label="Chaîne de production">
+    <article class="station" id="farm"><div class="station-top"><div class="avatar">🐐</div><div class="station-title"><h2>La ferme</h2><p>Les chèvres fournissent le lait.</p></div><div class="level" id="farm-level">Nv. 1</div></div><div class="stats"><span>🥛 Lait <strong id="milk">0</strong></span><span id="farm-speed">1 / cycle</span></div><div class="buttons"><button class="primary" data-manual="farm">Traire +1 lait</button><button class="upgrade" data-upgrade="farm">Améliorer · 12 🪙</button></div><button class="automate" data-auto="farm">Automatiser · 40 🪙</button></article>
+    <div class="connector" aria-hidden="true">↓</div>
+    <article class="station" id="dairy"><div class="station-top"><div class="avatar">🧀</div><div class="station-title"><h2>La fromagerie</h2><p>1 lait devient 1 halloumi.</p></div><div class="level" id="dairy-level">Nv. 1</div></div><div class="stats"><span>🧀 Halloumi <strong id="halloumi">0</strong></span><span id="dairy-speed">1 / cycle</span></div><div class="buttons"><button class="primary" data-manual="dairy">Fabriquer · 1 lait</button><button class="upgrade" data-upgrade="dairy">Améliorer · 18 🪙</button></div><button class="automate" data-auto="dairy">Automatiser · 80 🪙</button></article>
+    <div class="connector" aria-hidden="true">↓</div>
+    <article class="station" id="grill"><div class="station-top"><div class="avatar">🔥</div><div class="station-title"><h2>Le grill</h2><p>1 halloumi rapporte des pièces.</p></div><div class="level" id="grill-level">Nv. 1</div></div><div class="stats"><span>Prix de vente <strong id="price">8 🪙</strong></span><span id="grill-speed">1 / cycle</span></div><div class="buttons"><button class="primary" data-manual="grill">Vendre · +8 🪙</button><button class="upgrade" data-upgrade="grill">Améliorer · 24 🪙</button></div><button class="automate" data-auto="grill">Automatiser · 120 🪙</button></article>
+  </section>
+  <section class="panel"><h2>Ta progression</h2><div class="milestones" id="milestones"></div><p class="hint">Chaque amélioration augmente la capacité de l'étape. L'automatisation fait tourner le poste sans toucher l'écran.</p></section>
+  <details class="panel more"><summary>À propos de cette V0</summary><p>La partie est enregistrée dans ce navigateur, sur cet appareil. Elle n'est pas synchronisée entre sites ni appareils. Les gains hors ligne sont limités à 4 heures.</p><p id="stats"></p><button id="reset" class="reset">Recommencer la partie</button></details>
+  <footer>Prototype jouable · Sans publicité ni achat</footer>
+</main>
+<script>import '../scripts/game.js';</script>
+</body>
+</html>
+<style>
+:global(*){box-sizing:border-box}:global(html){background:#f4e9ce}:global(body){margin:0;color:#352a1d;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}:global(button){font:inherit;cursor:pointer;touch-action:manipulation}:global(button:disabled){cursor:not-allowed;opacity:.48}:global(button:focus-visible),:global(summary:focus-visible){outline:3px solid #166b85;outline-offset:3px}.app{max-width:540px;margin:auto;padding:22px 16px 48px}.hero{padding:12px 4px 16px}.brand{display:flex;gap:12px;align-items:center}.logo{font-size:38px}.eyebrow{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#8c5b31;font-weight:800}h1{font-size:27px;line-height:1.1;margin:3px 0}.hero p{color:#74634e;margin:12px 0 0;font-size:14px}.wallet{background:#352a1d;color:#fff9e9;display:flex;align-items:center;justify-content:space-between;border-radius:20px;padding:20px;margin-bottom:14px;box-shadow:0 5px 0 #c9b58e}.wallet small{display:block;color:#e5cfa1}.wallet strong{font-size:32px;font-variant-numeric:tabular-nums}.rate{border-radius:20px;background:#6d5533;padding:8px 12px;font-size:12px;white-space:nowrap}.objective,.panel{background:#fffaf0;border:1px solid #e5d4ac;border-radius:18px;padding:16px;margin-bottom:16px}.objective p{margin:6px 0 0;font-weight:650}.tag{font-size:10px;letter-spacing:.1em;font-weight:850;color:#a05b1d}.notice{background:#e1f4dd;border:1px solid #91c47e;border-radius:12px;padding:12px;margin-bottom:14px}.notice[hidden]{display:none}.station{background:#fffdf8;border:1px solid #e6d6b2;border-radius:18px;padding:16px;box-shadow:0 4px 0 #e4d0a7}.station-top{display:flex;align-items:center;gap:12px}.avatar{height:46px;width:46px;border-radius:14px;display:grid;place-items:center;background:#f8e8bc;font-size:26px}.station-title{flex:1}.station h2,.panel h2{font-size:17px;margin:0}.station p{color:#756858;font-size:12px;margin:3px 0}.level{font-size:11px;font-weight:800;color:#925922;background:#f9eac6;border-radius:9px;padding:6px}.stats{display:flex;justify-content:space-between;align-items:center;background:#f7f1e6;padding:10px;border-radius:10px;margin:14px 0;font-size:13px}.stats strong{font-variant-numeric:tabular-nums}.buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}.buttons button,.automate{min-height:48px;border:0;border-radius:11px;font-weight:750;font-size:12px;padding:8px}.primary{color:white;background:#d66831}.upgrade{color:#4a361c;background:#f2deb3}.automate{width:100%;margin-top:8px;color:#235637;background:#dcefd9}.automate.is-on{background:#dcefd9;color:#235637}.connector{text-align:center;height:26px;color:#bb8041;font-size:21px}.milestones{display:grid;gap:8px;margin-top:12px}.milestone{padding:8px 10px;background:#f7f0e2;border-radius:9px;font-size:13px}.milestone.done{color:#326b3c;background:#eaf4e6}.hint,.more p{font-size:12px;line-height:1.5;color:#756858}.more summary{font-weight:750;cursor:pointer}.reset{border:1px solid #bf735e;background:#fff5f0;color:#9a3b27;border-radius:8px;padding:10px}footer{text-align:center;font-size:11px;color:#85745d;margin-top:24px}@media(max-width:355px){.app{padding-left:10px;padding-right:10px}.buttons{grid-template-columns:1fr}}
+</style>
