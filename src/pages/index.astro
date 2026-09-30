@@ -1,20 +1,959 @@
 ---
-const title='Halloumi Empire — V0.1';
+const base = import.meta.env.BASE_URL;
+const halloumi = `${base}icons/halloumi.svg`;
+const grill = `${base}icons/grill.svg`;
 ---
-<!doctype html><html lang="fr"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/><meta name="theme-color" content="#ffe1a0"/><title>{title}</title></head><body>
-<main class="app">
-<header><div class="heading"><span class="badge">🧀</span><div><small>TON AVENTURE COMMENCE</small><h1>Halloumi Empire</h1></div></div><p>De la petite ferme à l'empire du grill.</p></header>
-<div class="wallet"><div><small>TON TRÉSOR</small><div><strong id="coins">0</strong> <span>🪙</span></div></div><span class="rate" id="income">Vente manuelle</span></div>
-<section class="world" aria-label="Ton île et tes bâtiments"><div class="sun">☀️</div><div class="cloud cloud-a">☁️</div><div class="cloud cloud-b">☁️</div><div class="hill hill-a"></div><div class="hill hill-b"></div><div class="road"></div><div class="building farm" id="scene-farm"><div class="roof"></div><div class="sprite">🐐</div><span>FERME</span><i>🥛</i></div><div class="building dairy" id="scene-dairy"><div class="roof"></div><div class="sprite">🧀</div><span>ATELIER</span><i>🧀</i></div><div class="building grill" id="scene-grill"><div class="roof"></div><div class="sprite">🔥</div><span>GRILL</span><i>🪙</i></div><div class="island-name"><span>🏝️ TON ÎLE</span><span id="stage">Les débuts</span></div><div class="float" id="float" aria-hidden="true"></div></section>
-<div class="mission"><span>🎯 MISSION</span><p id="objective">Fabrique et vends ton premier halloumi.</p></div><div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
-<div class="section-title">🏗️ Développe tes bâtiments</div>
-<section class="cards" aria-label="Chaîne de production">
-<article class="card" id="farm"><div class="card-head"><span class="icon">🐐</span><div><h2>La ferme</h2><small>Produis du lait</small></div><b id="farm-level">NV. 1</b></div><div class="bar"><span>🥛 Lait disponible</span><strong id="milk">0</strong></div><div class="actions"><button class="tap" data-manual="farm">Traire +1 🥛</button><button class="improve" data-upgrade="farm">Améliorer · 12 🪙</button></div><button class="auto" data-auto="farm">⚙️ Automatiser · 40 🪙</button></article>
-<article class="card" id="dairy"><div class="card-head"><span class="icon">🧀</span><div><h2>La fromagerie</h2><small>Transforme le lait</small></div><b id="dairy-level">NV. 1</b></div><div class="bar"><span>🧀 Blocs disponibles</span><strong id="halloumi">0</strong></div><div class="actions"><button class="tap" data-manual="dairy">Fabriquer · 1 🥛</button><button class="improve" data-upgrade="dairy">Améliorer · 18 🪙</button></div><button class="auto" data-auto="dairy">⚙️ Automatiser · 80 🪙</button></article>
-<article class="card" id="grill"><div class="card-head"><span class="icon">🔥</span><div><h2>Le grill</h2><small>Vends tes créations</small></div><b id="grill-level">NV. 1</b></div><div class="bar"><span>🪙 Prix par bloc</span><strong id="price">8</strong></div><div class="actions"><button class="tap" data-manual="grill">Vendre · +8 🪙</button><button class="improve" data-upgrade="grill">Améliorer · 24 🪙</button></div><button class="auto" data-auto="grill">⚙️ Automatiser · 120 🪙</button></article></section>
-<section class="panel"><h2>🏆 Tes exploits</h2><div id="milestones"></div></section><details class="panel info"><summary>À propos de la V0.1</summary><p>Partie enregistrée dans ce navigateur uniquement. Les gains hors ligne sont plafonnés à 4 heures. Pas de synchronisation entre appareils ou domaines.</p><p id="stats"></p><button class="reset" id="reset">Recommencer la partie</button></details>
-<footer>Halloumi Empire · Prototype sans publicité</footer>
-<nav class="dock" aria-label="Bâtiments"><a href="#farm">🐐<span>Ferme</span></a><a href="#dairy">🧀<span>Atelier</span></a><a href="#grill">🔥<span>Grill</span></a></nav></main><script>import '../scripts/game.js';</script></body></html>
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#ffe9bb" />
+    <meta
+      name="description"
+      content="Construis une fromagerie de halloumi, bâtiment après bâtiment."
+    />
+    <title>Halloumi Empire — V0.2</title>
+  </head>
+
+  <body>
+    <main class="app">
+      <header class="top">
+        <div>
+          <small>HALLOUMI EMPIRE <span class="version">V0.2</span></small>
+          <h1 id="view-title">Mon île</h1>
+        </div>
+
+        <div class="wallet" aria-label="Pièces">
+          <span class="coin-icon">●</span>
+          <strong id="coins">0</strong>
+        </div>
+      </header>
+
+      <div class="mission" id="mission">
+        <span>🎯</span>
+        <span id="objective">Vends ton premier halloumi !</span>
+      </div>
+
+      <div
+        id="notice"
+        class="notice"
+        hidden
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <!-- ÉCRAN : ÎLE -->
+      <section class="screen island" id="screen-island" aria-label="Ton île">
+        <div class="island-backdrop" aria-hidden="true">
+          <div class="sun"></div>
+          <div class="cloud a"></div>
+          <div class="cloud b"></div>
+          <div class="hills"></div>
+          <div class="path"></div>
+        </div>
+
+        <div class="places">
+          <article class="place" id="place-farm">
+            <div class="art">
+              <span class="art-icon goat" role="img" aria-label="Chèvre">🐐</span>
+              <span
+                class="automation-indicator"
+                id="farm-indicator"
+                hidden
+              >⚙</span>
+            </div>
+
+            <div class="details">
+              <small>01 · PRODUCTION</small>
+              <h2>La ferme</h2>
+              <div class="stock">
+                Lait <strong id="milk">0</strong>
+                <span id="farm-level">Nv. 1</span>
+              </div>
+            </div>
+
+            <button class="action" data-manual="farm">
+              Traire <b>+1</b>
+            </button>
+          </article>
+
+          <article class="place" id="place-dairy">
+            <div class="art">
+              <img src={halloumi} alt="Bloc de halloumi illustré" />
+              <span
+                class="automation-indicator"
+                id="dairy-indicator"
+                hidden
+              >⚙</span>
+            </div>
+
+            <div class="details">
+              <small>02 · FABRICATION</small>
+              <h2>L'atelier</h2>
+              <div class="stock">
+                Halloumi <strong id="halloumi">0</strong>
+                <span id="dairy-level">Nv. 1</span>
+              </div>
+            </div>
+
+            <button class="action" data-manual="dairy">
+              Fabriquer
+            </button>
+          </article>
+
+          <article class="place" id="place-grill">
+            <div class="art">
+              <img src={grill} alt="Grill illustré avec halloumi" />
+              <span
+                class="automation-indicator"
+                id="grill-indicator"
+                hidden
+              >⚙</span>
+            </div>
+
+            <div class="details">
+              <small>03 · VENTE</small>
+              <h2>Le grill</h2>
+              <div class="stock">
+                Par bloc <strong id="price">8</strong> pièces
+                <span id="grill-level">Nv. 1</span>
+              </div>
+            </div>
+
+            <button class="action" data-manual="grill">
+              Vendre
+            </button>
+          </article>
+        </div>
+
+        <div id="fx" class="fx" aria-hidden="true"></div>
+
+        <div class="island-foot" id="island-status">
+          Une petite aventure commence…
+        </div>
+      </section>
+
+      <!-- ÉCRAN : EXPLOITS -->
+      <section
+        class="screen secondary"
+        id="screen-achievements"
+        aria-label="Exploits"
+        hidden
+      >
+        <div class="panel intro">
+          <span class="trophy">🏆</span>
+          <div>
+            <h2>Mes exploits</h2>
+            <p>Les grandes étapes de ton empire.</p>
+          </div>
+        </div>
+
+        <div id="milestones" class="achievements"></div>
+      </section>
+
+      <!-- ÉCRAN : AMÉLIORATIONS -->
+      <section
+        class="screen secondary"
+        id="screen-upgrades"
+        aria-label="Améliorations"
+        hidden
+      >
+        <div class="panel intro">
+          <span class="trophy">🛠️</span>
+          <div>
+            <h2>Améliorations</h2>
+            <p>Rends tes bâtiments plus puissants.</p>
+          </div>
+        </div>
+
+        <div class="upgrade-list">
+          <article class="upgrade-card">
+            <div class="upgrade-head">
+              <span>🐐</span>
+              <div>
+                <h3>Ferme</h3>
+                <small id="farm-upgrade-info">
+                  Nv. 1 · 1 lait par cycle
+                </small>
+              </div>
+            </div>
+
+            <div class="upgrade-buttons">
+              <button data-upgrade="farm">
+                Améliorer · 12 pièces
+              </button>
+              <button data-auto="farm">
+                Automatiser · 40 pièces
+              </button>
+            </div>
+          </article>
+
+          <article class="upgrade-card">
+            <div class="upgrade-head">
+              <img src={halloumi} alt="" />
+              <div>
+                <h3>Atelier</h3>
+                <small id="dairy-upgrade-info">
+                  Nv. 1 · 1 bloc par cycle
+                </small>
+              </div>
+            </div>
+
+            <div class="upgrade-buttons">
+              <button data-upgrade="dairy">
+                Améliorer · 18 pièces
+              </button>
+              <button data-auto="dairy">
+                Automatiser · 80 pièces
+              </button>
+            </div>
+          </article>
+
+          <article class="upgrade-card">
+            <div class="upgrade-head">
+              <img src={grill} alt="" />
+              <div>
+                <h3>Grill</h3>
+                <small id="grill-upgrade-info">
+                  Nv. 1 · 8 pièces par bloc
+                </small>
+              </div>
+            </div>
+
+            <div class="upgrade-buttons">
+              <button data-upgrade="grill">
+                Améliorer · 24 pièces
+              </button>
+              <button data-auto="grill">
+                Automatiser · 120 pièces
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <div class="about">
+          <span id="stats"></span>
+          <p>
+            Partie conservée sur cet appareil et ce site. Gains hors ligne
+            plafonnés à 4 heures.
+          </p>
+          <button id="reset">Recommencer la partie</button>
+        </div>
+      </section>
+
+      <!-- NAVIGATION -->
+      <nav class="tabbar" aria-label="Navigation principale">
+        <button type="button" data-tab="achievements">
+          <span class="nav-icon">★</span>
+          <span>Exploits</span>
+        </button>
+
+        <button
+          type="button"
+          data-tab="island"
+          class="selected"
+          aria-current="page"
+        >
+          <span class="nav-icon">⌂</span>
+          <span>Île</span>
+        </button>
+
+        <button type="button" data-tab="upgrades">
+          <span class="nav-icon">⬆</span>
+          <span>Améliorations</span>
+        </button>
+      </nav>
+    </main>
+
+    <script>
+      import '../scripts/game.js';
+    </script>
+  </body>
+</html>
+
 <style>
-:global(*){box-sizing:border-box}:global(html){background:#ffedc6;scroll-behavior:smooth}:global(body){margin:0;background:linear-gradient(180deg,#ffe0a1,#fff3d7 550px,#f8e6be);font-family:system-ui,-apple-system,sans-serif;color:#513522}:global(button){font:inherit;cursor:pointer;touch-action:manipulation}:global(button:disabled){opacity:.5;cursor:not-allowed}:global(button:focus-visible),:global(a:focus-visible),:global(summary:focus-visible){outline:3px solid #12658c;outline-offset:2px}.app{max-width:550px;margin:auto;padding:14px 16px 108px}header{padding:6px 3px 12px}.heading{display:flex;align-items:center;gap:11px}.badge{font-size:40px}header small{font-size:10px;font-weight:900;letter-spacing:.12em;color:#ae5d2b}h1{margin:0;font-size:29px;line-height:1.2;letter-spacing:-.05em;color:#763919}header p{margin:8px 0 0;font-size:13px;color:#8d6043}.wallet{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(120deg,#75482b,#3b2a21);border:2px solid #c89660;border-radius:19px;padding:12px 17px;color:#fff9e8;box-shadow:0 5px 0 #b58d5a;margin-bottom:17px;position:sticky;top:7px;z-index:5}.wallet small{font-size:10px;font-weight:800;letter-spacing:.1em;color:#e8c99e}.wallet strong{font-size:29px;color:#ffe079;font-variant-numeric:tabular-nums}.rate{font-size:11px;border-radius:15px;padding:7px 9px;background:#996e40}.world{height:255px;position:relative;overflow:hidden;background:linear-gradient(#79c8f6 0%,#b7e9ff 57%,#81c779 57%,#5b9f53 100%);border:4px solid #fff7d8;border-radius:25px;box-shadow:0 7px 0 #c5955f,0 12px 18px #7c4e2644}.sun{position:absolute;top:13px;right:20px;font-size:39px;filter:drop-shadow(0 0 10px #fff5aa)}.cloud{position:absolute;top:15px;left:35px;font-size:30px;animation:drift 7s ease-in-out infinite alternate}.cloud-b{top:54px;left:54%;font-size:20px;animation-delay:-3s}.hill{position:absolute;bottom:28px;width:90%;height:94px;border-radius:50% 50% 0 0}.hill-a{left:-18%;background:#81ba71}.hill-b{right:-25%;background:#72ae63}.road{position:absolute;bottom:18px;left:0;width:100%;height:38px;background:repeating-linear-gradient(110deg,#c79660 0 25px,#d9a76e 25px 48px)}.building{position:absolute;bottom:55px;width:25%;height:88px;border:3px solid #9e603a;border-radius:8px;background:#ffdea4;display:flex;flex-direction:column;justify-content:center;align-items:center;box-shadow:4px 6px 0 #487646;transform-origin:bottom;transition:transform .2s}.building .roof{position:absolute;top:-23px;left:-5%;width:110%;height:25px;background:#bf6942;clip-path:polygon(50% 0%,100% 100%,0 100%);filter:drop-shadow(0 -2px #fff1d7)}.building .sprite{font-size:34px;line-height:1.3;z-index:1}.building span{font-size:10px;font-weight:950;z-index:1}.building i{position:absolute;top:-45px;font-size:23px;opacity:0;pointer-events:none;font-style:normal}.building.active i{animation:up 1s ease-out}.building.pop{animation:pop .55s ease}.building.automated{box-shadow:4px 6px 0 #487646,0 0 0 4px #ffe270}.farm{left:5%}.dairy{left:38%;background:#fff7cf}.grill{right:5%;background:#ffd09a}.island-name{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-between;background:#406332;color:white;padding:6px 11px;font-weight:850;font-size:10px}.float{position:absolute;left:45%;top:45px;color:#fff;font-size:22px;font-weight:950;text-shadow:1px 2px #654024;opacity:0;pointer-events:none}.float.fly{animation:up 1s ease-out}.mission,.panel{border:2px solid #e9bb67;background:#fff9de;border-radius:17px;margin-top:20px;padding:14px;box-shadow:0 4px 0 #dfbd80}.mission span{font-size:11px;font-weight:950;letter-spacing:.08em;color:#b16426}.mission p{font-size:14px;font-weight:750;margin:7px 0 1px}.notice{background:#dff2d6;border:2px solid #a1c985;padding:11px;border-radius:12px;margin-top:15px;font-size:13px;font-weight:700}.notice[hidden]{display:none}.section-title{font-size:18px;font-weight:950;margin:24px 3px 15px}.cards{display:grid;gap:16px}.card{background:#fffaf0;border:2px solid #d89c61;box-shadow:0 5px 0 #b77b4e;border-radius:19px;padding:14px;scroll-margin-top:83px}.card-head{display:flex;align-items:center;gap:9px}.icon{font-size:25px;background:#fae6b4;padding:7px;border-radius:12px}.card-head div{flex:1}.card h2,.panel h2{font-size:16px;margin:0}.card-head small{font-size:11px;color:#8c7055}.card-head b{font-size:11px;color:#9b5c27;background:#f9e8c3;padding:6px;border-radius:8px}.bar{display:flex;justify-content:space-between;background:#f4eddf;padding:9px;border-radius:9px;font-size:12px;margin:12px 0}.bar strong{font-size:16px;font-variant-numeric:tabular-nums}.actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.card button{min-height:47px;border-radius:11px;font-size:12px;font-weight:800;padding:7px}.tap{background:linear-gradient(#fca049,#da702c);border:2px solid #ac5327;color:white;box-shadow:0 3px 0 #a4522d}.improve{background:#ffe7aa;border:2px solid #dbb373;box-shadow:0 3px 0 #bb965f}.auto{width:100%;margin-top:10px;background:#e4f1d3;border:2px solid #a5c389;color:#426d35}.tap:active,.improve:active,.auto:active{transform:translateY(2px);box-shadow:none}.done{background:#e5f4d9!important;color:#426c30}.panel{margin-top:20px}.milestone{font-size:12px;background:#f7ebcf;padding:8px;border-radius:9px;margin-top:7px}.milestone.complete{background:#e4f4d7;color:#416b32}.info summary{font-weight:850;cursor:pointer}.info p{font-size:12px;line-height:1.5}.reset{background:#fff1e7;border:1px solid #bf765b;color:#943a26;border-radius:9px;padding:10px}footer{text-align:center;font-size:11px;color:#8c745c;margin-top:24px}.dock{position:fixed;z-index:10;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,550px);display:flex;justify-content:space-around;padding:9px 5px max(9px,env(safe-area-inset-bottom));background:#fff7df;border:3px solid #dbaa64;border-bottom:0;border-radius:19px 19px 0 0;box-shadow:0 -5px 18px #70442433}.dock a{color:#714723;text-align:center;text-decoration:none;font-size:23px;min-width:60px;line-height:1.1}.dock span{display:block;font-size:10px;font-weight:850}@keyframes pop{50%{transform:scale(1.14) rotate(-3deg)}}@keyframes up{0%{opacity:1;transform:translateY(15px)}75%{opacity:1}100%{opacity:0;transform:translateY(-55px)}}@keyframes drift{to{transform:translateX(25px)}}@media(max-width:360px){.app{padding-left:10px;padding-right:10px}.actions{grid-template-columns:1fr}}@media(prefers-reduced-motion:reduce){.cloud,.building.pop,.building.active i,.float.fly{animation:none}}
+  :global(*) {
+    box-sizing: border-box;
+  }
+
+  :global([hidden]) {
+    display: none !important;
+  }
+
+  :global(html) {
+    background: #ffedca;
+  }
+
+  :global(body) {
+    margin: 0;
+    color: #503622;
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #ffedca;
+  }
+
+  :global(button) {
+    font: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  :global(button:disabled) {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  :global(button:focus-visible) {
+    outline: 3px solid #11688a;
+    outline-offset: 2px;
+  }
+
+  .app {
+    width: min(100%, 520px);
+    height: 100vh;
+    height: 100dvh;
+    min-height: 520px;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: linear-gradient(180deg, #fff2d4, #ffedca);
+    position: relative;
+  }
+
+  .top {
+    flex: none;
+    min-height: 82px;
+    padding: 16px 16px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .top small {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    font-weight: 900;
+    color: #b77531;
+  }
+
+  .version {
+    color: #765329;
+  }
+
+  .top h1 {
+    font-size: 26px;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin: 5px 0 0;
+    color: #6c351c;
+  }
+
+  .wallet {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 83px;
+    justify-content: center;
+    background: #5f3b28;
+    color: #fff1bd;
+    border: 2px solid #ad753b;
+    border-radius: 30px;
+    padding: 7px 10px;
+    box-shadow: 0 3px 0 #bd9055;
+  }
+
+  .wallet strong {
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .coin-icon {
+    color: #ffd14f;
+    text-shadow: 1px 2px #b2791f;
+    font-size: 25px;
+    line-height: 15px;
+  }
+
+  .mission {
+    flex: none;
+    min-height: 42px;
+    margin: 0 16px 9px;
+    padding: 8px 12px;
+    border: 2px solid #dfad60;
+    background: #fff8db;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .notice {
+    position: absolute;
+    z-index: 8;
+    top: 118px;
+    left: 24px;
+    right: 24px;
+    text-align: center;
+    padding: 10px;
+    background: #dff5d3;
+    border: 2px solid #80ba71;
+    border-radius: 13px;
+    font-size: 13px;
+    font-weight: 800;
+    box-shadow: 0 4px 10px #553d2755;
+  }
+
+  .screen {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .island {
+    position: relative;
+    margin: 0 12px 8px;
+    overflow: hidden;
+    border: 3px solid #fff9dd;
+    border-radius: 22px;
+    background: linear-gradient(
+      #8dd2f1 0%,
+      #c8e9f3 36%,
+      #a4cf80 37%,
+      #71b878 100%
+    );
+    box-shadow: 0 5px 0 #c7a06d;
+  }
+
+  .island-backdrop {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .sun {
+    position: absolute;
+    right: 25px;
+    top: 11px;
+    width: 37px;
+    height: 37px;
+    background: #ffe779;
+    border: 4px solid #fff1a6;
+    border-radius: 50%;
+    box-shadow: 0 0 20px #fffbb3;
+  }
+
+  .cloud {
+    position: absolute;
+    width: 55px;
+    height: 14px;
+    background: #fff9e9;
+    border-radius: 20px;
+    opacity: 0.8;
+  }
+
+  .cloud::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    bottom: 5px;
+    width: 27px;
+    height: 22px;
+    border-radius: 50%;
+    background: inherit;
+  }
+
+  .cloud.a {
+    top: 26px;
+    left: 23px;
+  }
+
+  .cloud.b {
+    top: 64px;
+    right: 75px;
+    transform: scale(0.7);
+  }
+
+  .hills {
+    position: absolute;
+    inset: 36% -20% 0;
+    background:
+      radial-gradient(
+        ellipse at 14% 100%,
+        #76b474 0 42%,
+        transparent 43%
+      ),
+      radial-gradient(
+        ellipse at 83% 97%,
+        #5daa70 0 50%,
+        transparent 51%
+      );
+  }
+
+  .path {
+    position: absolute;
+    left: 18%;
+    top: 14%;
+    bottom: 12%;
+    width: 20%;
+    transform: rotate(-4deg);
+    background: #dbb783;
+    filter: blur(3px);
+    border-radius: 40%;
+  }
+
+  .places {
+    position: absolute;
+    inset: 43px 10px 35px;
+    display: grid;
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .place {
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 9px;
+    border: 2px solid #9b683b;
+    border-radius: 18px;
+    background: linear-gradient(130deg, #fff8e7f7, #ffe6afea);
+    box-shadow:
+      0 4px 0 #7f9d5c,
+      2px 6px 10px #314d3b55;
+    position: relative;
+  }
+
+  .place:nth-child(2) {
+    margin-left: 17px;
+  }
+
+  .place:nth-child(3) {
+    margin-right: 12px;
+  }
+
+  .art {
+    height: clamp(46px, 9vh, 74px);
+    width: clamp(49px, 10vh, 78px);
+    background: #f2d38e;
+    border: 2px solid #b37f43;
+    border-radius: 17px;
+    display: grid;
+    place-items: center;
+    position: relative;
+    flex: none;
+  }
+
+  .art img {
+    display: block;
+    width: 89%;
+    height: 89%;
+    object-fit: contain;
+  }
+
+  .goat {
+    font-size: clamp(31px, 6vh, 47px);
+    line-height: 1;
+  }
+
+  .automation-indicator {
+    position: absolute;
+    right: -6px;
+    top: -7px;
+    background: #62a573;
+    color: #fff;
+    border: 2px solid #fff7df;
+    border-radius: 50%;
+    width: 23px;
+    height: 23px;
+    text-align: center;
+    font-size: 16px;
+    line-height: 19px;
+  }
+
+  .details {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .details small {
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    font-weight: 900;
+    color: #9f632f;
+  }
+
+  .details h2 {
+    font-size: clamp(15px, 3.4vh, 20px);
+    line-height: 1.12;
+    margin: 2px 0 5px;
+    white-space: nowrap;
+  }
+
+  .stock {
+    font-size: 11px;
+    color: #69492c;
+    white-space: nowrap;
+  }
+
+  .stock strong {
+    font-size: 14px;
+    color: #3d642e;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stock span {
+    display: block;
+    font-size: 10px;
+    font-weight: 800;
+    color: #9c6934;
+  }
+
+  .action {
+    flex: none;
+    width: clamp(83px, 26%, 118px);
+    min-height: 49px;
+    padding: 5px;
+    border: 2px solid #a85021;
+    border-radius: 13px;
+    background: linear-gradient(#fa9e4c, #d96827);
+    box-shadow: 0 3px 0 #aa5020;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  .action b {
+    display: block;
+  }
+
+  .action:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #a85021;
+  }
+
+  .place.pulse {
+    animation: pulse 0.4s ease;
+  }
+
+  .fx {
+    position: absolute;
+    left: 45%;
+    top: 24%;
+    z-index: 4;
+    font-size: 24px;
+    font-weight: 950;
+    color: #fff;
+    text-shadow: 2px 2px #6e4b2a;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .fx.fly {
+    animation: fly 0.9s ease-out;
+  }
+
+  .island-foot {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 26px;
+    padding: 5px;
+    background: #426738;
+    color: white;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .secondary {
+    overflow-y: auto;
+    padding: 0 16px 16px;
+    scrollbar-width: thin;
+  }
+
+  .panel,
+  .upgrade-card,
+  .achievement,
+  .about {
+    background: #fffaf0;
+    border: 2px solid #debb82;
+    border-radius: 17px;
+    box-shadow: 0 4px 0 #d7b67c;
+  }
+
+  .intro {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 14px;
+  }
+
+  .trophy {
+    font-size: 29px;
+  }
+
+  .intro h2 {
+    font-size: 17px;
+    margin: 0;
+  }
+
+  .intro p {
+    font-size: 12px;
+    margin: 3px 0 0;
+  }
+
+  .achievements,
+  .upgrade-list {
+    display: grid;
+    gap: 11px;
+    margin-top: 16px;
+  }
+
+  .achievement {
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 750;
+  }
+
+  .achievement .seal {
+    font-size: 25px;
+    color: #9c875f;
+  }
+
+  .achievement.complete {
+    background: #ecf6d9;
+    border-color: #97c17e;
+  }
+
+  .achievement.complete .seal {
+    color: #4b8b4f;
+  }
+
+  .upgrade-card {
+    padding: 12px;
+  }
+
+  .upgrade-head {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .upgrade-head > span,
+  .upgrade-head img {
+    width: 39px;
+    height: 39px;
+    object-fit: contain;
+    font-size: 33px;
+  }
+
+  .upgrade-head h3 {
+    font-size: 15px;
+    margin: 0;
+  }
+
+  .upgrade-head small {
+    color: #8b6442;
+    font-size: 11px;
+  }
+
+  .upgrade-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 11px;
+  }
+
+  .upgrade-buttons button {
+    min-height: 46px;
+    border: 2px solid #c89049;
+    background: #ffe5ab;
+    border-radius: 11px;
+    color: #5d3c20;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 6px;
+  }
+
+  .upgrade-buttons button:nth-child(2) {
+    background: #dceecb;
+    border-color: #95b77d;
+  }
+
+  .upgrade-buttons button.done {
+    background: #cae8b6;
+    color: #356338;
+  }
+
+  .about {
+    padding: 13px;
+    margin-top: 16px;
+    font-size: 12px;
+  }
+
+  .about p {
+    color: #7b6652;
+    line-height: 1.4;
+  }
+
+  .about button {
+    padding: 8px 10px;
+    border: 1px solid #ae745e;
+    background: #fff2e9;
+    color: #8b392c;
+    border-radius: 9px;
+  }
+
+  .tabbar {
+    flex: none;
+    z-index: 5;
+    min-height: 66px;
+    padding: 6px 4px max(8px, env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    background: #fff8e5;
+    border-top: 2px solid #dfbe8b;
+    box-shadow: 0 -3px 14px #78523225;
+  }
+
+  .tabbar button {
+    border: 0;
+    background: none;
+    color: #97795b;
+    border-radius: 12px;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 1px;
+    font-size: 10px;
+    font-weight: 850;
+    min-height: 51px;
+  }
+
+  .tabbar button.selected {
+    background: #f4dbab;
+    color: #6d3a20;
+  }
+
+  .nav-icon {
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  @keyframes pulse {
+    50% {
+      transform: scale(1.035);
+    }
+  }
+
+  @keyframes fly {
+    0% {
+      opacity: 1;
+      transform: translateY(20px);
+    }
+
+    70% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateY(-55px);
+    }
+  }
+
+  @media (max-height: 650px) {
+    .top {
+      min-height: 64px;
+      padding-top: 8px;
+    }
+
+    .top h1 {
+      font-size: 22px;
+    }
+
+    .mission {
+      min-height: 34px;
+      margin-bottom: 5px;
+      font-size: 11px;
+    }
+
+    .places {
+      top: 28px;
+      bottom: 29px;
+      gap: 4px;
+    }
+
+    .place {
+      padding: 3px 8px;
+    }
+
+    .art {
+      height: clamp(37px, 8vh, 56px);
+      width: clamp(39px, 9vh, 59px);
+    }
+
+    .goat {
+      font-size: 30px;
+    }
+
+    .details h2 {
+      margin: 0 0 2px;
+    }
+
+    .stock span {
+      display: inline;
+      margin-left: 4px;
+    }
+
+    .action {
+      min-height: 42px;
+    }
+
+    .tabbar {
+      min-height: 57px;
+    }
+  }
+
+  @media (max-width: 350px) {
+    .place:nth-child(2) {
+      margin-left: 5px;
+    }
+
+    .place:nth-child(3) {
+      margin-right: 3px;
+    }
+
+    .art {
+      width: 44px;
+    }
+
+    .action {
+      width: 79px;
+      font-size: 11px;
+    }
+
+    .details small {
+      font-size: 8px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .place.pulse,
+    .fx.fly {
+      animation: none;
+    }
+  }
 </style>
